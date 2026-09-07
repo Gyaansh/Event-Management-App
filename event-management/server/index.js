@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 
 const eventsRouter = require('./routes/events');
 const statsRouter = require('./routes/stats');
@@ -8,9 +7,30 @@ const statsRouter = require('./routes/stats');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// 1. Whitelist your frontend origins
+const allowedOrigins = [
+  'http://localhost:5173', // Local Vite dev server
+  'https://your-app-name.vercel.app', // Your actual Vercel production domain (no trailing slash)
+  process.env.CLIENT_URL, // Optional: pass via hosting env variables
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like Postman or curl) or matched frontend
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true, // Required if using auth cookies or Authorization headers
+  })
+);
+
 app.use(express.json());
 
+// 2. API Routes
 app.use('/api/events', eventsRouter);
 app.use('/api/stats', statsRouter);
 
@@ -18,15 +38,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve the React production build
-const clientBuildPath = path.join(__dirname, 'public');
-app.use(express.static(clientBuildPath));
-
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
+// 3. Fallback for unhandled API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// 4. Bind to 0.0.0.0 for cloud providers (Render, Railway, Fly.io, etc.)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });
