@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 5000;
 // 1. Whitelist your frontend origins
 const allowedOrigins = [
   'http://localhost:5173', // Local Vite dev server
-  'https://your-app-name.vercel.app', // Your actual Vercel production domain (no trailing slash)
+  'https://event-management-app-tmts-orcin.vercel.app/', // Your actual Vercel production domain (no trailing slash)
   process.env.CLIENT_URL, // Optional: pass via hosting env variables
 ].filter(Boolean);
 
